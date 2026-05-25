@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class VacinasConfig(AppConfig):
+class NotificacoesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'vacinas'
+    name = 'apps.notificacoes'
