@@ -9,4 +9,5 @@ urlpatterns = [
     path('api/perfis/', include('apps.perfis.urls')),
     path('api/calendario/', include('calendario.urls')),
     path('api/atendimentos/', include('atendimentos.urls')),
+    path('api/registros/', include('registros.urls')),
 ]
