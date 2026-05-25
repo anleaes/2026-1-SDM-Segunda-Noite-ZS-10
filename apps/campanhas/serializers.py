@@ -1,8 +1,9 @@
 from rest_framework import serializers
-from .models import Notificacao
+from .models import CampanhaVacinacao
 
-class NotificacaoSerializer(serializers.ModelSerializer):
+
+class CampanhaVacinacaoSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Notificacao
+        model = CampanhaVacinacao
         fields = '__all__'
