@@ -1,3 +1,7 @@
-from django.shortcuts import render
+from rest_framework import viewsets
+from .models import PerfilSaude
+from .serializers import PerfilSaudeSerializer
 
-# Create your views here.
+class PerfilSaudeViewSet(viewsets.ModelViewSet):
+    queryset = PerfilSaude.objects.all()
+    serializer_class = PerfilSaudeSerializer
