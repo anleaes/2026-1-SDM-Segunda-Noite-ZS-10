@@ -9,23 +9,26 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-import environ
 import os
-env = environ.Env()
-environ.Env.read_env(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
-SECRET_KEY = env('SECRET_KEY')
-DEBUG = env.bool('DEBUG', default=True)
-
 from pathlib import Path
+
+import environ
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Carrega as variáveis sensíveis a partir do arquivo .env (fora do controle de versão).
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
+# SECURITY WARNING: a SECRET_KEY nunca deve ficar fixa no código; defina no .env.
+SECRET_KEY = env('SECRET_KEY')
+
 # SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = env.bool('DEBUG', default=True)
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -90,6 +93,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
+# Database
+# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+#
+# As credenciais do banco (incluindo a carteira/wallet do Oracle OCI) NÃO devem
+# ficar fixas no código. Elas são lidas do .env. Quando as variáveis do Oracle
+# não estão definidas (ex.: ambiente local), o projeto usa SQLite automaticamente.
+
 ORACLE_WALLET_DIR = env('ORACLE_WALLET_DIR', default='')
 ORACLE_OPTIONS = {}
 
@@ -97,27 +107,33 @@ if ORACLE_WALLET_DIR:
     wallet_path = ORACLE_WALLET_DIR
     if not os.path.isabs(wallet_path):
         wallet_path = os.path.join(BASE_DIR, wallet_path)
-
     ORACLE_OPTIONS = {
         'config_dir': wallet_path,
         'wallet_location': wallet_path,
     }
-
     ORACLE_WALLET_PASSWORD = env('ORACLE_WALLET_PASSWORD', default='')
     if ORACLE_WALLET_PASSWORD:
         ORACLE_OPTIONS['wallet_password'] = ORACLE_WALLET_PASSWORD
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.oracle',
-        'NAME': env('ORACLE_DSN'),
-        'USER': env('ORACLE_USER'),
-        'PASSWORD': env('ORACLE_PASSWORD'),
-        'HOST': '',
-        'PORT': '',
-        'OPTIONS': ORACLE_OPTIONS,
+if env('ORACLE_USER', default=None):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.oracle',
+            'NAME': env('ORACLE_DSN'),
+            'USER': env('ORACLE_USER'),
+            'PASSWORD': env('ORACLE_PASSWORD'),
+            'HOST': '',
+            'PORT': '',
+            'OPTIONS': ORACLE_OPTIONS,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 
 # Password validation
