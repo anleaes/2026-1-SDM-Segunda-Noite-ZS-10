@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Vacinas</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+
+<body>
+
+  {% if user.is_authenticated %}
+
+  <!-- Cabeçalho -->
+  <header>
+    <div class="header-content">
+      <h1>Sistema de Vacinas</h1>
+      <div class="user-info">
+        <span>Olá, {{ user.username }}</span>
+        <form method="post" action="{% url 'logout' %}" style="display:inline;">
+          {% csrf_token %}
+          <button type="submit" class="btn-logout">Sair</button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navegação -->
+  <nav id="nav"></nav>
+
+  <!-- Conteúdo -->
+  <main>
+    <div id="msg"></div>
+
+    <div class="form-section">
+      <h2 id="ttl">Novo Registro</h2>
+      <form id="form"></form>
+    </div>
+
+    <div class="table-section">
+      <h3>Registros</h3>
+      <div id="table"></div>
+    </div>
+  </main>
+
+  <!-- CSRF token para o JavaScript -->
+  <script>var CSRF_TOKEN = "{{ csrf_token }}";</script>
+  <script src="{% static 'js/panel.js' %}"></script>
+
+  {% else %}
+
+  <!-- Página de Login -->
+  <div class="login-container">
+    <div class="login-box">
+      <h1>Sistema de Vacinas</h1>
+      <p>Faça login para acessar o sistema</p>
+
+      {% if form.errors %}
+      <div class="login-error">Usuário ou senha inválidos.</div>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="/">
+
+        <div class="login-field">
+          <label for="id_username">Usuário</label>
+          <input type="text" id="id_username" name="username" placeholder="Digite seu usuário" required>
+        </div>
+
+        <div class="login-field">
+          <label for="id_password">Senha</label>
+          <input type="password" id="id_password" name="password" placeholder="Digite sua senha" required>
+        </div>
+
+        <button type="submit" class="btn-login">Entrar</button>
+      </form>
+
+      <div class="login-footer">
+        Sistemas Distribuídos e Mobile — UniRitter 2026/1
+      </div>
+    </div>
+  </div>
+
+  {% endif %}
+
+</body>
+
+</html>
