@@ -4,8 +4,9 @@ from .views import NotificacaoViewSet
 router = DefaultRouter()
 
 router.register(
-    r'notificacoes',
-    NotificacaoViewSet
+    r'',
+    NotificacaoViewSet,
+    basename='notificacao'
 )
 
 urlpatterns = router.urls

@@ -4,8 +4,9 @@ from .views import SituacaoVacinaViewSet
 router = DefaultRouter()
 
 router.register(
-    r'situacao',
-    SituacaoVacinaViewSet
+    r'',
+    SituacaoVacinaViewSet,
+    basename='situacaovacinal'
 )
 
 urlpatterns = router.urls

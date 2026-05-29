@@ -4,8 +4,9 @@ from .views import CampanhaVacinacaoViewSet
 router = DefaultRouter()
 
 router.register(
-    r'campanhas',
-    CampanhaVacinacaoViewSet
+    r'',
+    CampanhaVacinacaoViewSet,
+    basename='campanhavacinacao'
 )
 
 urlpatterns = router.urls
