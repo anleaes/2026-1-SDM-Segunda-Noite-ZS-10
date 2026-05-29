@@ -27,7 +27,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in env('ALLOWED_HOSTS', default='localhost,127.0.0.1,10.116.10.101').split(',')
+    if host.strip()
+]
 
 
 # Application definition
@@ -40,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'corsheaders',
     'apps.pessoas',
     'apps.unidades',
     'apps.vacinas',
@@ -53,6 +58,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,6 +67,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'core.urls'
 
@@ -82,13 +90,32 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+ORACLE_WALLET_DIR = env('ORACLE_WALLET_DIR', default='')
+ORACLE_OPTIONS = {}
+
+if ORACLE_WALLET_DIR:
+    wallet_path = ORACLE_WALLET_DIR
+    if not os.path.isabs(wallet_path):
+        wallet_path = os.path.join(BASE_DIR, wallet_path)
+
+    ORACLE_OPTIONS = {
+        'config_dir': wallet_path,
+        'wallet_location': wallet_path,
+    }
+
+    ORACLE_WALLET_PASSWORD = env('ORACLE_WALLET_PASSWORD', default='')
+    if ORACLE_WALLET_PASSWORD:
+        ORACLE_OPTIONS['wallet_password'] = ORACLE_WALLET_PASSWORD
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.oracle',
+        'NAME': env('ORACLE_DSN'),
+        'USER': env('ORACLE_USER'),
+        'PASSWORD': env('ORACLE_PASSWORD'),
+        'HOST': '',
+        'PORT': '',
+        'OPTIONS': ORACLE_OPTIONS,
     }
 }
 
