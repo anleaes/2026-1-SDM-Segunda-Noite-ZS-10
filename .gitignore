@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .env
 db.sqlite3
+oracle_wallet/
+wallet/
+Wallet_*/
