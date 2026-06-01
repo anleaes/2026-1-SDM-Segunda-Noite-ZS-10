@@ -1,0 +1,180 @@
+@startuml ModeloApp
+
+class User <<Django Auth>>{
+-username: Char
+-password: Char
+-first_name: Char
+-last_name: Char
+-email: Email
++toString()
+}
+
+class Pessoa{
+-nome: Char
+-email: Email
+-telefone: Char
++toString()
+}
+
+class Paciente{
+-cpf: Char
+-data_nascimento: Date
+-ativo: Boolean
++toString()
+}
+
+class ProfissionalSaude{
+-unidade_saude: ForeignKey[UnidadeSaude]
+-registro_profissional: Char
+-cargo: Char
+-ativo: Boolean
++toString()
+}
+
+class PerfilSaude{
+-paciente: OneToOne[Paciente]
+-grupo_risco: Boolean
+-gestante: Boolean
+-alergias: Text
+-observacoes: Text
++toString()
+}
+
+class UnidadeSaude{
+-nome: Char
+-endereco: Char
+-bairro: Char
+-telefone: Char
+-horario_funcionamento: Char
+-ativa: Boolean
++toString()
+}
+
+class Vacina{
+-nome: Char
+-fabricante: Char
+-doenca_prevenida: Char
+-quantidade_doses: Integer
+-intervalo_dias: Integer
+-ativa: Boolean
++toString()
+}
+
+class LoteVacina{
+-vacina: ForeignKey[Vacina]
+-unidade_saude: ForeignKey[UnidadeSaude]
+-numero_lote: Char
+-data_validade: Date
+-quantidade_disponivel: Integer
++toString()
+}
+
+class CalendarioVacinal{
+-vacina: ForeignKey[Vacina]
+-idade_minima_meses: Integer
+-idade_maxima_meses: Integer
+-publico_alvo: Char
+-dose_recomendada: Char
+-obrigatoria: Boolean
++toString()
+}
+
+class Atendimento{
+-paciente: ForeignKey[Paciente]
+-unidade_saude: ForeignKey[UnidadeSaude]
+-profissional: ForeignKey[ProfissionalSaude]
+-data_atendimento: DateTime
+-status: Char
+-observacao: Text
++toString()
+}
+
+class DoseAtendimento{
+-atendimento: ForeignKey[Atendimento]
+-vacina: ForeignKey[Vacina]
+-lote: ForeignKey[LoteVacina]
+-ordemDose: Char
+-observacao: Text
++toString()
+}
+
+class RegistroVacinacao{
+-paciente: ForeignKey[Paciente]
+-vacina: ForeignKey[Vacina]
+-lote: ForeignKey[LoteVacina]
+-profissional: ForeignKey[ProfissionalSaude]
+-unidade_saude: ForeignKey[UnidadeSaude]
+-atendimento: ForeignKey[Atendimento]
+-data_aplicacao: Date
+-dose: Char
+-observacao: Text
++toString()
+}
+
+class CampanhaVacinacao{
+-nome: Char
+-descricao: Text
+-data_inicio: Date
+-data_fim: Date
+-publico_alvo: Char
+-ativa: Boolean
+-vacinas: ManyToMany[Vacina]
++toString()
+}
+
+class Notificacao{
+-paciente: ForeignKey[Paciente]
+-titulo: Char
+-mensagem: Text
+-data_envio: DateTime
+-tipo: Char
+-lida: Boolean
++toString()
+}
+
+class SituacaoVacinal{
+-paciente: ForeignKey[Paciente]
+-vacina: ForeignKey[Vacina]
+-calendario_vacinal: ForeignKey[CalendarioVacinal]
+-status: Char
+-data_verificacao: DateTime
+-observacao: Text
++toString()
+}
+
+note top of User : Modelo padrao do Django,\nusado para login (token/sessao)
+
+Paciente -up-|> Pessoa : herda
+ProfissionalSaude -up-|> Pessoa : herda
+
+Paciente *--> PerfilSaude : 1..1
+Paciente *--> Notificacao : 0..n
+Paciente *--> Atendimento : 0..n
+Paciente *--> RegistroVacinacao : 0..n
+Paciente *--> SituacaoVacinal : 0..n
+
+UnidadeSaude *--> ProfissionalSaude : 0..n
+UnidadeSaude *--> LoteVacina : 0..n
+UnidadeSaude *--> RegistroVacinacao : 0..n
+UnidadeSaude *--> Atendimento : 0..n
+
+ProfissionalSaude *--> Atendimento : 0..n
+ProfissionalSaude *--> RegistroVacinacao : 0..n
+
+Vacina *--> LoteVacina : 0..n
+Vacina *--> CalendarioVacinal : 0..n
+Vacina *--> RegistroVacinacao : 0..n
+Vacina *--> DoseAtendimento : 0..n
+Vacina *--> SituacaoVacinal : 0..n
+
+Atendimento *--> DoseAtendimento : 0..n
+Atendimento *--> RegistroVacinacao : 0..n
+
+LoteVacina *--> DoseAtendimento : 0..n
+LoteVacina *--> RegistroVacinacao : 0..n
+
+CalendarioVacinal *--> SituacaoVacinal : 0..n
+
+CampanhaVacinacao *--> Vacina : 0..n / 0..n
+
+@enduml
