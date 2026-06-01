@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework.authtoken',
     'corsheaders',
     'apps.pessoas',
     'apps.unidades',
@@ -186,6 +187,9 @@ LOGOUT_REDIRECT_URL = '/'
 # DRF — proteger a API com sessão autenticada
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        # Token: usado pelo app mobile (envia "Authorization: Token <token>").
+        'rest_framework.authentication.TokenAuthentication',
+        # Sessão: usada pelo painel web de testes (login por formulário).
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
