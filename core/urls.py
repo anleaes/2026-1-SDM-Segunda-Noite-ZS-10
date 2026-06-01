@@ -8,6 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # ── Autenticação ──
+    path('contas/', include('apps.accounts.urls', namespace='accounts')),
     path('accounts/', include('django.contrib.auth.urls')),
 
     # ── API REST ──
