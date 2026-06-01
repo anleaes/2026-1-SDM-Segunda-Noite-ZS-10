@@ -11,3 +11,17 @@ class CalendarioVacinaSerializer(serializers.ModelSerializer):
             'idade_minima_meses', 'idade_maxima_meses',
             'publico_alvo', 'dose_recomendada', 'obrigatoria'
         ]
+
+    def validate(self, attrs):
+        inst = self.instance
+        minima = attrs.get('idade_minima_meses', getattr(inst, 'idade_minima_meses', None))
+        maxima = attrs.get('idade_maxima_meses', getattr(inst, 'idade_maxima_meses', None))
+        if minima is not None and minima < 0:
+            raise serializers.ValidationError(
+                {'idade_minima_meses': 'A idade mínima não pode ser negativa.'}
+            )
+        if maxima is not None and minima is not None and maxima < minima:
+            raise serializers.ValidationError(
+                {'idade_maxima_meses': 'A idade máxima deve ser maior ou igual à mínima.'}
+            )
+        return attrs

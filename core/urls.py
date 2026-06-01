@@ -3,12 +3,18 @@ from django.contrib.auth import views as auth_views
 from django.urls import path, include
 from django.views.generic import TemplateView
 
+from .auth_views import LoginView, LogoutView
+
 urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html'), name='home'),
     path('admin/', admin.site.urls),
 
     # ── Autenticação ──
     path('accounts/', include('django.contrib.auth.urls')),
+
+    # ── Autenticação por Token (app mobile) ──
+    path('api/auth/login/', LoginView.as_view(), name='api-login'),
+    path('api/auth/logout/', LogoutView.as_view(), name='api-logout'),
 
     # ── API REST ──
     path('api/pessoas/', include('apps.pessoas.urls')),
