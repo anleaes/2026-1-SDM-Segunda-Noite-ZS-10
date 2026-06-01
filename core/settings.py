@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     'apps.campanhas',
     'apps.notificacoes',
     'apps.situacao',
+    'apps.accounts',
 ]
 
 MIDDLEWARE = [
@@ -180,7 +181,7 @@ STATICFILES_DIRS = [BASE_DIR / 'static']
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # ───── Autenticação ─────
-LOGIN_URL = '/accounts/login/'
+LOGIN_URL = '/contas/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
