@@ -136,25 +136,58 @@ Acesse: `http://127.0.0.1:8000/`
 
 ---
 
+## 🔐 Autenticação
+
+A API exige autenticação. São aceitos dois métodos:
+
+- **Token** (usado pelo app mobile): obtenha o token no login e envie no header
+  `Authorization: Token <seu-token>`.
+- **Sessão** (usada pelo painel web de testes em `/`): login por formulário.
+
+| Endpoint | Método | Descrição |
+|---|---|---|
+| `/api/auth/login/` | `POST` | Recebe `username` e `password`, devolve `token` + dados do usuário |
+| `/api/auth/logout/` | `POST` | Invalida o token atual |
+
+```bash
+# Exemplo de login
+curl -X POST http://127.0.0.1:8000/api/auth/login/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "professor", "password": "vacinas123"}'
+# -> {"token": "abc123...", "usuario": {"id": 1, "username": "professor"}}
+```
+
+---
+
 ## 🌐 Endpoints da API
 
-Todos os endpoints suportam `GET`, `POST`, `PUT`, `PATCH` e `DELETE`.
+Todos os endpoints suportam `GET`, `POST`, `PUT`, `PATCH` e `DELETE` e exigem autenticação.
 
 | Recurso | URL Base |
 |---|---|
 | Pacientes | `/api/pessoas/pacientes/` |
 | Profissionais de Saúde | `/api/pessoas/profissionais/` |
-| Unidades de Saúde | `/api/unidades/unidades/` |
-| Vacinas | `/api/vacinas/vacinas/` |
+| Unidades de Saúde | `/api/unidades/` |
+| Vacinas | `/api/vacinas/` |
 | Lotes de Vacinas | `/api/vacinas/lotes/` |
-| Perfis de Saúde | `/api/perfis/perfis/` |
-| Calendário Vacinal | `/api/calendario/calendarios/` |
-| Atendimentos | `/api/atendimentos/atendimentos/` |
+| Perfis de Saúde | `/api/perfis/` |
+| Calendário Vacinal | `/api/calendario/` |
+| Atendimentos | `/api/atendimentos/` |
 | Doses por Atendimento | `/api/atendimentos/doses/` |
-| Registros de Vacinação | `/api/registros/registros/` |
-| Campanhas de Vacinação | `/api/campanhas/campanhas/` |
-| Notificações | `/api/notificacoes/notificacoes/` |
-| Situação Vacinal | `/api/situacao/situacao/` |
+| Registros de Vacinação | `/api/registros/` |
+| Campanhas de Vacinação | `/api/campanhas/` |
+| Notificações | `/api/notificacoes/` |
+| Situação Vacinal | `/api/situacao/` |
+
+### Regras de negócio aplicadas
+
+- **Doses / Registros**: o lote precisa pertencer à vacina, estar dentro da validade e
+  com estoque; a ordem da dose respeita o total de doses da vacina; não há doses
+  duplicadas para o mesmo paciente; o intervalo mínimo entre doses é validado.
+- **Registro**: só em atendimento `realizado`; decrementa o estoque do lote ao criar e
+  devolve ao excluir.
+- **Vacina**: quantidade de doses entre 1 e 10.
+- **E-mail e CPF** únicos, com mensagens de erro claras.
 
 ---
 
