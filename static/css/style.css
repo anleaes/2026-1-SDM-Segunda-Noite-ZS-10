@@ -141,6 +141,41 @@ button.add:hover {
   background-color: #1b5e20;
 }
 
+/* Lista de checkboxes para campos ManyToMany */
+.checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 200px;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 7px 10px;
+  background-color: #fff;
+}
+
+.checkboxes .check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: #333;
+  cursor: pointer;
+}
+
+.checkboxes .check input {
+  min-width: 0;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.checkboxes .vazio {
+  font-size: 12px;
+  color: #999;
+}
+
 /* ===== Tabela ===== */
 .table-section {
   background-color: white;
