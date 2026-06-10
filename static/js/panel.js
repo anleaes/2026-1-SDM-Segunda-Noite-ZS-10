@@ -41,7 +41,7 @@ var R = {
   perfis: {
     label: "Perfis",
     path: "/perfis/",
-    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["grupo_risco","Grupo de risco"],["gestante","Gestante","bool"],["alergias","Alergias"],["observacoes","Observações"]],
+    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["grupo_risco","Grupo de risco","bool"],["gestante","Gestante","bool"],["alergias","Alergias"],["observacoes","Observações"]],
     cols: ["id","paciente_nome","grupo_risco","gestante","alergias"]
   },
   calendario: {
@@ -53,19 +53,19 @@ var R = {
   atendimentos: {
     label: "Atendimentos",
     path: "/atendimentos/",
-    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["unidade_saude","Unidade","fk","/unidades/"],["profissional","Profissional","fk","/pessoas/profissionais/"],["data_atendimento","Data","date"],["status","Status"],["observacao","Observação"]],
+    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["unidade_saude","Unidade","fk","/unidades/"],["profissional","Profissional","fk","/pessoas/profissionais/"],["data_atendimento","Data","datetime"],["status","Status","choice",[["agendado","Agendado"],["realizado","Realizado"],["cancelado","Cancelado"]]],["observacao","Observação"]],
     cols: ["id","paciente_nome","unidade_saude_nome","profissional_nome","data_atendimento","status"]
   },
   doses: {
     label: "Doses",
     path: "/atendimentos/doses/",
-    fields: [["atendimento","Atendimento (id)","num"],["vacina","Vacina","fk","/vacinas/"],["lote","Lote","fk","/vacinas/lotes/"],["ordem_dose","Ordem da dose","num"],["observacao","Observação"]],
+    fields: [["atendimento","Atendimento","fk","/atendimentos/"],["vacina","Vacina","fk","/vacinas/"],["lote","Lote","fk","/vacinas/lotes/"],["ordem_dose","Ordem da dose"],["observacao","Observação"]],
     cols: ["id","atendimento","vacina_nome","lote_numero","ordem_dose"]
   },
   registros: {
     label: "Registros",
     path: "/registros/",
-    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["vacina","Vacina","fk","/vacinas/"],["lote","Lote","fk","/vacinas/lotes/"],["profissional","Profissional","fk","/pessoas/profissionais/"],["unidade_saude","Unidade","fk","/unidades/"],["atendimento","Atendimento (id)","num"],["data_aplicacao","Data aplicação","date"],["dose","Dose"],["observacao","Observação"]],
+    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["vacina","Vacina","fk","/vacinas/"],["lote","Lote","fk","/vacinas/lotes/"],["profissional","Profissional","fk","/pessoas/profissionais/"],["unidade_saude","Unidade","fk","/unidades/"],["atendimento","Atendimento","fk","/atendimentos/"],["data_aplicacao","Data aplicação","date"],["dose","Dose"],["observacao","Observação"]],
     cols: ["id","paciente_nome","vacina_nome","lote_numero","data_aplicacao","dose","unidade_saude_nome"]
   },
   campanhas: {
@@ -77,13 +77,13 @@ var R = {
   notificacoes: {
     label: "Notificações",
     path: "/notificacoes/",
-    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["titulo","Título"],["mensagem","Mensagem"],["data_envio","Data envio","date"],["tipo","Tipo"],["lida","Lida","bool"]],
+    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["titulo","Título"],["mensagem","Mensagem"],["tipo","Tipo","choice",[["lembrete","Lembrete"],["alerta","Alerta"],["informativo","Informativo"]]],["lida","Lida","bool"]],
     cols: ["id","paciente_nome","titulo","tipo","data_envio","lida"]
   },
   situacao: {
     label: "Situação Vacinal",
     path: "/situacao/",
-    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["vacina","Vacina","fk","/vacinas/"],["calendario_vacinal","Calendário (id)","num"],["status","Status"],["data_verificacao","Data verificação","date"],["observacao","Observação"]],
+    fields: [["paciente","Paciente","fk","/pessoas/pacientes/"],["vacina","Vacina","fk","/vacinas/"],["calendario_vacinal","Calendário","fk","/calendario/"],["status","Status","choice",[["em_dia","Em Dia"],["pendente","Pendente"],["atrasado","Atrasado"]]],["observacao","Observação"]],
     cols: ["id","paciente_nome","vacina_nome","status","data_verificacao"]
   }
 };
@@ -93,6 +93,17 @@ function asList(d) {
   if (Array.isArray(d)) return d;
   if (d && d.results) return d.results;
   return [];
+}
+
+// Monta um rótulo legível para uma opção de seleção (FK/M2M),
+// já que nem todo recurso tem campo "nome" (ex.: calendário, atendimento).
+function rotuloOpcao(item) {
+  if (item.nome) return item.nome;
+  if (item.titulo) return item.titulo;
+  if (item.numero_lote) return item.numero_lote + (item.vacina_nome ? " (" + item.vacina_nome + ")" : "");
+  if (item.dose_recomendada) return (item.vacina_nome ? item.vacina_nome + " - " : "") + item.dose_recomendada + (item.publico_alvo ? " (" + item.publico_alvo + ")" : "");
+  if (item.paciente_nome) return "#" + item.id + " - " + item.paciente_nome + (item.data_atendimento ? " (" + String(item.data_atendimento).slice(0, 10) + ")" : "");
+  return "#" + item.id;
 }
 
 // Mostra mensagem de sucesso ou erro
@@ -108,6 +119,7 @@ function msg(texto, sucesso) {
 // Faz chamada à API
 function api(path, opts) {
   if (!opts) opts = {};
+  opts.credentials = 'same-origin';
   // Adiciona token CSRF em POST, PUT, DELETE
   if (opts.method && opts.method !== "GET") {
     if (!opts.headers) opts.headers = {};
@@ -115,9 +127,11 @@ function api(path, opts) {
   }
   return fetch(API + path, opts).then(function(res) {
     if (res.status === 204) return null;
-    if (res.status === 401 || res.status === 403) {
-      window.location.reload();
-      return null;
+    if (res.status === 401) {
+      throw new Error("Sessão expirada. Faça login novamente.");
+    }
+    if (res.status === 403) {
+      throw new Error("Sem permissão para esta operação.");
     }
     return res.json().then(function(d) {
       if (!res.ok) throw new Error(JSON.stringify(d, null, 2));
@@ -164,11 +178,47 @@ function montarForm() {
 
     var el;
     if (type === "bool") {
+      // Opção neutra primeiro: se não for tocada, o campo é omitido e o
+      // backend aplica o default do model (evita marcar tudo como "Sim").
       el = document.createElement("select");
-      el.innerHTML = "<option value='true'>Sim</option><option value='false'>Não</option>";
-    } else if (type === "fk" || type === "m2m") {
+      el.innerHTML = "<option value=''>— (padrão) —</option><option value='true'>Sim</option><option value='false'>Não</option>";
+    } else if (type === "choice") {
+      // Campo de escolha fixa (ex.: status, tipo) — opções vêm da definição.
       el = document.createElement("select");
-      if (type === "m2m") el.multiple = true;
+      el.innerHTML = "<option value=''>— Selecione —</option>";
+      for (var o = 0; o < from.length; o++) {
+        var optC = document.createElement("option");
+        optC.value = from[o][0];
+        optC.textContent = from[o][1];
+        el.appendChild(optC);
+      }
+    } else if (type === "m2m") {
+      // ManyToMany: lista de checkboxes (permite marcar vários sem Ctrl+clique).
+      el = document.createElement("div");
+      el.className = "checkboxes";
+      (function(container, rota) {
+        api(rota).then(function(d) {
+          var lista = asList(d);
+          if (lista.length === 0) {
+            container.innerHTML = "<span class='vazio'>Nenhuma opção disponível.</span>";
+            return;
+          }
+          for (var j = 0; j < lista.length; j++) {
+            var lab = document.createElement("label");
+            lab.className = "check";
+            var cb = document.createElement("input");
+            cb.type = "checkbox";
+            cb.value = lista[j].id;
+            var sp = document.createElement("span");
+            sp.textContent = rotuloOpcao(lista[j]);
+            lab.appendChild(cb);
+            lab.appendChild(sp);
+            container.appendChild(lab);
+          }
+        }).catch(function() {});
+      })(el, from);
+    } else if (type === "fk") {
+      el = document.createElement("select");
       el.innerHTML = "<option value=''>— Selecione —</option>";
       // Carrega opções do servidor
       (function(select, rota) {
@@ -177,7 +227,7 @@ function montarForm() {
           for (var j = 0; j < lista.length; j++) {
             var opt = document.createElement("option");
             opt.value = lista[j].id;
-            opt.textContent = lista[j].nome || lista[j].titulo || lista[j].numero_lote || ("#" + lista[j].id);
+            opt.textContent = rotuloOpcao(lista[j]);
             select.appendChild(opt);
           }
         }).catch(function() {});
@@ -186,6 +236,7 @@ function montarForm() {
       el = document.createElement("input");
       if (type === "num") el.type = "number";
       else if (type === "date") el.type = "date";
+      else if (type === "datetime") el.type = "datetime-local";
       else el.type = "text";
     }
 
@@ -215,11 +266,14 @@ function salvar(e) {
     var n = el.getAttribute("data-name");
     if (t === "m2m") {
       var vals = [];
-      for (var j = 0; j < el.selectedOptions.length; j++) {
-        var v = Number(el.selectedOptions[j].value);
+      var cbs = el.querySelectorAll("input[type=checkbox]");
+      for (var j = 0; j < cbs.length; j++) {
+        if (!cbs[j].checked) continue;
+        var v = Number(cbs[j].value);
         if (v) vals.push(v);
       }
-      if (vals.length) body[n] = vals;
+      // Envia sempre (lista vazia limpa o relacionamento).
+      body[n] = vals;
     } else if (el.value !== "") {
       var val = el.value;
       if (t === "bool") val = val === "true";
