@@ -6,6 +6,12 @@ var API = "/api";
 // Recurso selecionado atualmente
 var cur = "unidades";
 
+// Id do registro em edição (null = criando um novo)
+var editId = null;
+
+// Cache dos registros listados, para preencher o form ao editar
+var rowsCache = [];
+
 // Definição de todos os recursos da API
 var R = {
   unidades: {
@@ -151,16 +157,21 @@ function montarNav() {
     btn.setAttribute("data-key", k);
     btn.onclick = function() {
       cur = this.getAttribute("data-key");
+      editId = null;
       render();
     };
     nav.appendChild(btn);
   }
 }
 
-// Monta o formulário de criação
-function montarForm() {
+// Monta o formulário de criação ou edição.
+// Se "registro" for informado, os campos vêm preenchidos (modo edição).
+function montarForm(registro) {
   var c = R[cur];
-  document.getElementById("ttl").textContent = "Novo: " + c.label;
+  var editando = registro && registro.id != null;
+  document.getElementById("ttl").textContent = editando
+    ? ("Editar " + c.label + " #" + registro.id)
+    : ("Novo: " + c.label);
   var f = document.getElementById("form");
   f.innerHTML = "";
 
@@ -169,6 +180,7 @@ function montarForm() {
     var label = c.fields[i][1];
     var type = c.fields[i][2] || "text";
     var from = c.fields[i][3];
+    var valor = editando ? registro[name] : undefined;
 
     var div = document.createElement("div");
     div.className = "field";
@@ -182,6 +194,8 @@ function montarForm() {
       // backend aplica o default do model (evita marcar tudo como "Sim").
       el = document.createElement("select");
       el.innerHTML = "<option value=''>— (padrão) —</option><option value='true'>Sim</option><option value='false'>Não</option>";
+      if (valor === true) el.value = "true";
+      else if (valor === false) el.value = "false";
     } else if (type === "choice") {
       // Campo de escolha fixa (ex.: status, tipo) — opções vêm da definição.
       el = document.createElement("select");
@@ -192,11 +206,12 @@ function montarForm() {
         optC.textContent = from[o][1];
         el.appendChild(optC);
       }
+      if (valor != null) el.value = valor;
     } else if (type === "m2m") {
       // ManyToMany: lista de checkboxes (permite marcar vários sem Ctrl+clique).
       el = document.createElement("div");
       el.className = "checkboxes";
-      (function(container, rota) {
+      (function(container, rota, selecionados) {
         api(rota).then(function(d) {
           var lista = asList(d);
           if (lista.length === 0) {
@@ -209,6 +224,7 @@ function montarForm() {
             var cb = document.createElement("input");
             cb.type = "checkbox";
             cb.value = lista[j].id;
+            if (selecionados && selecionados.indexOf(lista[j].id) !== -1) cb.checked = true;
             var sp = document.createElement("span");
             sp.textContent = rotuloOpcao(lista[j]);
             lab.appendChild(cb);
@@ -216,12 +232,12 @@ function montarForm() {
             container.appendChild(lab);
           }
         }).catch(function() {});
-      })(el, from);
+      })(el, from, valor || []);
     } else if (type === "fk") {
       el = document.createElement("select");
       el.innerHTML = "<option value=''>— Selecione —</option>";
-      // Carrega opções do servidor
-      (function(select, rota) {
+      // Carrega opções do servidor e, em edição, pré-seleciona o atual.
+      (function(select, rota, selecionado) {
         api(rota).then(function(d) {
           var lista = asList(d);
           for (var j = 0; j < lista.length; j++) {
@@ -230,14 +246,20 @@ function montarForm() {
             opt.textContent = rotuloOpcao(lista[j]);
             select.appendChild(opt);
           }
+          if (selecionado != null) select.value = String(selecionado);
         }).catch(function() {});
-      })(el, from);
+      })(el, from, valor);
     } else {
       el = document.createElement("input");
       if (type === "num") el.type = "number";
       else if (type === "date") el.type = "date";
       else if (type === "datetime") el.type = "datetime-local";
       else el.type = "text";
+      if (valor != null) {
+        if (type === "datetime") el.value = String(valor).slice(0, 16);
+        else if (type === "date") el.value = String(valor).slice(0, 10);
+        else el.value = valor;
+      }
     }
 
     el.setAttribute("data-name", name);
@@ -248,14 +270,23 @@ function montarForm() {
 
   var btn = document.createElement("button");
   btn.className = "add";
-  btn.textContent = "Adicionar";
+  btn.textContent = editando ? "Salvar alterações" : "Adicionar";
   btn.type = "submit";
   f.appendChild(btn);
+
+  if (editando) {
+    var btnCancel = document.createElement("button");
+    btnCancel.className = "cancel";
+    btnCancel.textContent = "Cancelar";
+    btnCancel.type = "button";
+    btnCancel.onclick = cancelarEdicao;
+    f.appendChild(btnCancel);
+  }
 
   f.onsubmit = salvar;
 }
 
-// Salva novo registro
+// Salva o registro: cria (POST) ou atualiza (PUT) conforme o modo.
 function salvar(e) {
   e.preventDefault();
   var body = {};
@@ -282,16 +313,40 @@ function salvar(e) {
     }
   }
 
-  api(R[cur].path, {
-    method: "POST",
+  var url = editId ? (R[cur].path + editId + "/") : R[cur].path;
+  // PATCH na edição: só os campos enviados são alterados (não limpa o resto).
+  var metodo = editId ? "PATCH" : "POST";
+  var sucesso = editId ? "Atualizado com sucesso!" : "Criado com sucesso!";
+
+  api(url, {
+    method: metodo,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
   }).then(function() {
-    msg("Criado com sucesso!", true);
+    msg(sucesso, true);
+    editId = null;
     render();
   }).catch(function(err) {
     msg("Erro: " + err.message, false);
   });
+}
+
+// Entra no modo edição: preenche o form com o registro selecionado.
+function editar(id) {
+  var registro = null;
+  for (var i = 0; i < rowsCache.length; i++) {
+    if (String(rowsCache[i].id) === String(id)) { registro = rowsCache[i]; break; }
+  }
+  if (!registro) return;
+  editId = registro.id;
+  montarForm(registro);
+  window.scrollTo(0, 0);
+}
+
+// Cancela a edição e volta ao formulário de criação.
+function cancelarEdicao() {
+  editId = null;
+  montarForm();
 }
 
 // Lista os registros na tabela
@@ -302,6 +357,7 @@ function listar() {
 
   api(c.path).then(function(data) {
     var rows = asList(data);
+    rowsCache = rows;
     if (rows.length === 0) {
       el.innerHTML = "<p class='empty'>Nenhum registro encontrado.</p>";
       return;
@@ -311,7 +367,7 @@ function listar() {
     for (var i = 0; i < c.cols.length; i++) {
       html += "<th>" + c.cols[i] + "</th>";
     }
-    html += "<th></th></tr></thead><tbody>";
+    html += "<th></th><th></th></tr></thead><tbody>";
 
     for (var j = 0; j < rows.length; j++) {
       html += "<tr>";
@@ -322,12 +378,20 @@ function listar() {
         else if (v === null || v === undefined) v = "—";
         html += "<td>" + v + "</td>";
       }
+      html += "<td class='editar' data-id='" + rows[j].id + "'>editar</td>";
       html += "<td class='del' data-id='" + rows[j].id + "'>excluir</td></tr>";
     }
     html += "</tbody></table>";
     el.innerHTML = html;
 
-    // Adiciona evento de excluir
+    // Eventos de editar
+    var eds = el.querySelectorAll(".editar");
+    for (var e2 = 0; e2 < eds.length; e2++) {
+      eds[e2].onclick = function() {
+        editar(this.getAttribute("data-id"));
+      };
+    }
+    // Eventos de excluir
     var btns = el.querySelectorAll(".del");
     for (var b = 0; b < btns.length; b++) {
       btns[b].onclick = function() {

@@ -224,6 +224,30 @@ tr:hover {
   text-decoration: underline;
 }
 
+.editar {
+  color: #2e7d32;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.editar:hover {
+  text-decoration: underline;
+}
+
+button.cancel {
+  background-color: #757575;
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+button.cancel:hover {
+  background-color: #5f5f5f;
+}
+
 .empty {
   padding: 30px;
   text-align: center;
